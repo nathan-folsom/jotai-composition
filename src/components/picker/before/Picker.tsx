@@ -47,7 +47,7 @@ export default function Picker<T>({ options, enableSearch }: PickerProps<T>) {
         .map(o => (
           <Item key={o.name} onClick={handleClick(o.name)}>
             <p key={o.name}>{o.name}</p>
-            <input type={'checkbox'} checked={selectedItems[o.name]} onClick={handleClick(o.name)}/>
+            <input type={'checkbox'} checked={selectedItems[o.name]} onChange={handleClick(o.name)}/>
           </Item>
         ))}
     </Container>

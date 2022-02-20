@@ -77,3 +77,35 @@ We can already see this starting to happen where the list is being rendered. The
 account the search filtering as well as the logic for mapping options to list items. So what do we do about it?
 
 ###Composition
+With a couple of tricks and some help from Jotai, we can encapsulate logic into smaller components; and then combine
+them to build something bigger. Just as the React gods intended.
+First, let's break down the component into it's logical units:  
+1. State Container: Keeps track of internal state.
+2. List Renderer: Reads from state and renders items.
+3. Search Input: Modifies state depending on user input.  
+
+Breaking things up in this way creates some additional overhead, but provides significant advantages in terms of code
+cleanliness as a component becomes more complex. Here's what the composition looks like at the top level:
+
+    <Picker options={items}>
+      {state => (
+        <>
+          <Search state={state} />
+          <List state={state} />
+        </>
+      )}
+    </Picker>
+
+This makes use of React's [render props](https://reactjs.org/docs/render-props.html) to compose the smaller components
+within the State Container, while allowing the state to reside only within the State Container and not be a part of global state.
+This also allows us to place props that are specific to a subcomponent on the subcomponent itself. Say for example that we
+wanted to implement some custom search filtering logic that filtered by more than just the `name` field on the option.
+We could easily modify the `Search` component and use it as so:
+
+      ...
+
+          <Search state={state} searchFields={["name", "value"]} />
+
+      ...
+
+Next lets take a look at how the internal state works
