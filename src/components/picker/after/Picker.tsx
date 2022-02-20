@@ -22,13 +22,14 @@ export default function Picker<T>({ options, children }: PickerProps<T>) {
   const state = useRef<PickerState<T>>({
     inputOptionsAtom: atom<Option<T>[]>([]),
     displayOptionsAtom: atom<Option<T>[]>([]),
-    searchAtom: atom(""),
-  })
+  });
   const setOptions = useUpdateAtom(state.current.inputOptionsAtom);
+  const setDisplayOptions = useUpdateAtom(state.current.displayOptionsAtom);
 
   useEffect(() => {
     setOptions(options);
-  }, [options, setOptions]);
+    setDisplayOptions(options);
+  }, [options, setDisplayOptions, setOptions]);
 
   return (
     <Container>

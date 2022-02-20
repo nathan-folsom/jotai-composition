@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PickerState } from '../../types';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import styled from 'styled-components';
 import { useUpdateAtom } from 'jotai/utils';
 
@@ -14,7 +14,7 @@ export type SearchProps<T> = {
 }
 
 export default function Search<T>({ state }: SearchProps<T>) {
-  const [search, setSearch] = useAtom(state.searchAtom);
+  const [search, setSearch] = useState("");
   const inputOptions = useAtomValue(state.inputOptionsAtom);
   const setOptions = useUpdateAtom(state.displayOptionsAtom);
 

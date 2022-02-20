@@ -76,7 +76,7 @@ the higher the chance that there will be some clashing logic, or that it will si
 We can already see this starting to happen where the list is being rendered. The rendering logic now has to take into
 account the search filtering as well as the logic for mapping options to list items. So what do we do about it?
 
-###Composition
+##Composition
 With a couple of tricks and some help from Jotai, we can encapsulate logic into smaller components; and then combine
 them to build something bigger. Just as the React gods intended.
 First, let's break down the component into it's logical units:  
@@ -108,4 +108,36 @@ We could easily modify the `Search` component and use it as so:
 
       ...
 
-Next lets take a look at how the internal state works
+##Internal State
+Let's take a look at how the internal state works.
+
+###State Container:
+
+    export type PickerProps<T> = {
+      options: Option<T>[];
+      children: (state: PickerState<T>) => ReactNode;
+    }
+
+    export default function Picker<T>({ options, children }: PickerProps<T>) {
+      const state = useRef<PickerState<T>>({
+        inputOptionsAtom: atom<Option<T>[]>([]),
+        displayOptionsAtom: atom<Option<T>[]>([]),
+      });
+
+    ...
+
+      return (
+        <Container>
+          {children(state.current)}
+        </Container>
+      );
+    }
+
+The important things to note here are the usage of the `children` prop, and internal state within `useRef`.
+`useRef` assures that our atoms are created once and persist throughout the lifecycle of the component. As we will see
+later, each atom is similar to a useState and child components can choose which atoms to pay attention to for optimized
+rerendering. In this component we have two atoms:
+* `inputOptionsAtom` stores the options that were provided to the `Picker` component as props.
+* `displayOptionsAtom` stores an updated copy of the options, which allows for mutating and then diffing between the two lists.
+
+###List Renderer

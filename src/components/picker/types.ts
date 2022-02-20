@@ -9,5 +9,4 @@ export type Option<T> = {
 export type PickerState<T> = {
   inputOptionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
   displayOptionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
-  searchAtom: WritableAtom<string, string>;
 }
