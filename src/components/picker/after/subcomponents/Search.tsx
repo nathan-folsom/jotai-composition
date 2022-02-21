@@ -9,11 +9,11 @@ const SearchInput = styled.input`
   padding: 5px;
 `;
 
-export type SearchProps<T> = {
-  state: PickerState<T>;
+export type SearchProps = {
+  state: PickerState;
 }
 
-export default function Search<T>({ state }: SearchProps<T>) {
+export default function Search({ state }: SearchProps) {
   const [search, setSearch] = useState("");
   const options = useAtomValue(state.optionsAtom);
   const setHidden = useUpdateAtom(state.hiddenAtom);

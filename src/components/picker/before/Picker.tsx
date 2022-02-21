@@ -24,12 +24,12 @@ const SearchInput = styled.input`
   padding: 5px;
 `;
 
-export type PickerProps<T> = {
-  options: Option<T>[];
+export type PickerProps = {
+  options: Option[];
   enableSearch?: boolean;
 }
 
-export default function Picker<T>({ options, enableSearch }: PickerProps<T>) {
+export default function Picker({ options, enableSearch }: PickerProps) {
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
 

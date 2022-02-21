@@ -1,5 +1,5 @@
 import { PickerState } from '../../types';
 
-export default function useFilterOptions<T>(state: PickerState<T>) {
+export default function useFilterOptions(state: PickerState) {
 
 }

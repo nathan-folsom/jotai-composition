@@ -1,10 +1,10 @@
 import { Option, PickerState } from '../../types';
 import { atom } from 'jotai';
 
-export default function combinedUpdatesAtom<T>(
-  optionsAtom: PickerState<T>['optionsAtom'],
-  hiddenAtom: PickerState<T>['hiddenAtom'],
-  selectedAtom: PickerState<T>['selectedAtom'],
+export default function combinedUpdatesAtom(
+  optionsAtom: PickerState['optionsAtom'],
+  hiddenAtom: PickerState['hiddenAtom'],
+  selectedAtom: PickerState['selectedAtom'],
 ) {
   return atom(
     get => {
@@ -16,7 +16,7 @@ export default function combinedUpdatesAtom<T>(
         selected: selected[o.name]
       }));
     },
-    (_get, set, update: Option<T>[]) => {
+    (_get, set, update: Option[]) => {
       set(optionsAtom, update);
     }
   )

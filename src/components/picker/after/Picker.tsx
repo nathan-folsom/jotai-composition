@@ -13,13 +13,13 @@ const Container = styled.div`
   margin: 10px;
 `;
 
-export type PickerProps<T> = {
-  options: Option<T>[];
-  children: (state: PickerState<T>) => ReactNode;
+export type PickerProps = {
+  options: Option[];
+  children: (state: PickerState) => ReactNode;
 }
 
-export default function Picker<T>({ options, children }: PickerProps<T>) {
-  const state = useRef<PickerState<T>>(initializeState());
+export default function Picker({ options, children }: PickerProps) {
+  const state = useRef<PickerState>(initializeState());
   const setOptions = useUpdateAtom(state.current.optionsAtom);
 
   useEffect(() => {

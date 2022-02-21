@@ -13,12 +13,12 @@ const Item = styled.button`
   width: 100%;
 `;
 
-export type ListItemProps<T> = {
-  option: Option<T>;
+export type ListItemProps = {
+  option: Option;
   onClick: () => void;
 }
 
-export default function ListItem<T>({ option: o, onClick }: ListItemProps<T>) {
+export default function ListItem({ option: o, onClick }: ListItemProps) {
   if (o.hidden) return null;
   return (
     <Item key={o.name} onClick={onClick}>

@@ -1,13 +1,13 @@
 import { WritableAtom } from "jotai";
 
-export type Option<T> = {
+export type Option = {
   name: string;
   hidden?: boolean;
   selected?: boolean;
-} & T;
+};
 
-export type PickerState<T> = {
-  optionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
+export type PickerState = {
+  optionsAtom: WritableAtom<Option[], Option[]>;
   hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
   selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
 }

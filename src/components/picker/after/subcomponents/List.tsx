@@ -9,15 +9,15 @@ const Container = styled.div`
   overflow-y: hidden;
 `;
 
-export type ListProps<T> = {
-  state: PickerState<T>
+export type ListProps = {
+  state: PickerState
 }
 
-export default function List<T>({ state }: ListProps<T>) {
+export default function List({ state }: ListProps) {
   const options = useAtomValue(state.optionsAtom);
   const [selected, setSelected] = useAtom(state.selectedAtom);
 
-  const handleClick = (option: Option<T>) => {
+  const handleClick = (option: Option) => {
     return () => setSelected({ ...selected, [option.name]: !option.selected });
   }
 
