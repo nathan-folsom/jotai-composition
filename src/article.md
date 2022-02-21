@@ -119,12 +119,12 @@ Let's take a look at how the internal state works.
     }
 
     export default function Picker<T>({ options, children }: PickerProps<T>) {
-      const state = useRef<PickerState<T>>({
-        inputOptionsAtom: atom<Option<T>[]>([]),
-        displayOptionsAtom: atom<Option<T>[]>([]),
-      });
+      const state = useRef<PickerState<T>>(initializeState());
+      const setOptions = useUpdateAtom(state.current.optionsAtom);
 
-    ...
+      useEffect(() => {
+        setOptions(options);
+      }, [options, setOptions]);
 
       return (
         <Container>
@@ -134,10 +134,66 @@ Let's take a look at how the internal state works.
     }
 
 The important things to note here are the usage of the `children` prop, and internal state within `useRef`.
-`useRef` assures that our atoms are created once and persist throughout the lifecycle of the component. As we will see
-later, each atom is similar to a useState and child components can choose which atoms to pay attention to for optimized
-rerendering. In this component we have two atoms:
-* `inputOptionsAtom` stores the options that were provided to the `Picker` component as props.
-* `displayOptionsAtom` stores an updated copy of the options, which allows for mutating and then diffing between the two lists.
+`useRef` assures that our atoms are created once and persist throughout the lifecycle of the component. The shape of
+the state object is also worth taking a look at:
+
+    type PickerState<T> = {
+        optionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
+        hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
+        selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
+    }
+
+The `hiddenAtom` holds a map of items that are currently hidden, the `selectedAtom` holds a map of items that are
+selected, and the `optionsAtom` holds a list of items that are automatically combined with the values held within the
+previous two atoms. If you want to see how that works, take a look at [`initializeState.ts`](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/initializeState.ts)
+and [`combinedUpdatesAtom.ts`](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/combinedUpdatesAtom.ts).
 
 ###List Renderer
+
+As we can see here, there is no longer any filtering involved in rendering the list. The only thing that the component
+is paying attention to now is the list of items that it is provided with in state.
+
+    export default function List<T>({ state }: ListProps<T>) {
+      const [options, setOptions] = useAtom(state.displayOptionsAtom);
+
+      const handleClick = (name: string) => {
+        return () => setOptions(options.map(o => o.name === name ? { ...o, selected: !o.selected } : o));
+      }
+
+      const ListItem = ({ option: o }: { option: Option<T> }) => {
+        if (o.hidden) return null;
+        return (
+          <Item key={o.name} onClick={handleClick(o.name)}>
+            <p key={o.name}>{o.name}</p>
+            <input type={'checkbox'} checked={!!o.selected} onChange={handleClick(o.name)}/>
+          </Item>
+        )
+      }
+
+      return (
+        <Container>
+          {options.map(o => <ListItem key={o.name} option={o} />)}
+        </Container>
+      )
+    }
+
+## Search Input
+
+And the search input also nicely contains all logic related to filtering the list of items to display, as well as 
+rendering the actual input.
+
+    export default function Search<T>({ state }: SearchProps<T>) {
+      const [search, setSearch] = useState("");
+      const inputOptions = useAtomValue(state.inputOptionsAtom);
+      const setOptions = useUpdateAtom(state.displayOptionsAtom);
+
+      useEffect(() => {
+        setOptions(inputOptions.map(o => ({ ...o, hidden: !o.name.includes(search)})))
+      }, [search, setOptions, inputOptions]);
+
+      return <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>;
+    }
+
+If we wanted to take things even further, we could create a `useFilterOptions` hook that would abstract the logic even
+further and really make sure that the component was only concerned with rendering
+
