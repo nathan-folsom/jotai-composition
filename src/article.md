@@ -10,11 +10,11 @@ to see all of the code.
 
     ...
     
-    export type PickerProps<T> = {
-      options: Option<T>[];
+    export type PickerProps = {
+      options: Option[];
     }
 
-    export default function Picker<T>({ options }: PickerProps<T>) {
+    export default function Picker({ options }: PickerProps) {
       const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
 
       const handleClick = (name: string) => {
@@ -39,12 +39,12 @@ and to implement the search logic within the component.
 
     ...
 
-    export type PickerProps<T> = {
-      options: Option<T>[]; 
+    export type PickerProps = {
+      options: Option[]; 
       enableSearch: boolean;
     }
 
-    export default function Picker<T>({ options, enableSearch }: PickerProps<T>) {
+    export default function Picker({ options, enableSearch }: PickerProps) {
       const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
       const [search, setSearch] = useState("");
 
@@ -113,13 +113,13 @@ Let's take a look at how the internal state works.
 
 ###State Container:
 
-    export type PickerProps<T> = {
-      options: Option<T>[];
-      children: (state: PickerState<T>) => ReactNode;
+    export type PickerProps = {
+      options: Option[];
+      children: (state: PickerState) => ReactNode;
     }
 
-    export default function Picker<T>({ options, children }: PickerProps<T>) {
-      const state = useRef<PickerState<T>>(initializeState());
+    export default function Picker({ options, children }: PickerProps) {
+      const state = useRef<PickerState>(initializeState());
       const setOptions = useUpdateAtom(state.current.optionsAtom);
 
       useEffect(() => {
@@ -137,8 +137,8 @@ The important things to note here are the usage of the `children` prop, and inte
 `useRef` assures that our atoms are created once and persist throughout the lifecycle of the component. The shape of
 the state object is also worth taking a look at:
 
-    type PickerState<T> = {
-        optionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
+    type PickerState = {
+        optionsAtom: WritableAtom<Option[], Option[]>;
         hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
         selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
     }
@@ -153,14 +153,14 @@ and [`combinedUpdatesAtom.ts`](https://github.com/nathan-folsom/jotai-compositio
 As we can see here, there is no longer any filtering involved in rendering the list. The only thing that the component
 is paying attention to now is the list of items that it is provided with in state.
 
-    export default function List<T>({ state }: ListProps<T>) {
+    export default function List({ state }: ListProps) {
       const [options, setOptions] = useAtom(state.displayOptionsAtom);
 
       const handleClick = (name: string) => {
         return () => setOptions(options.map(o => o.name === name ? { ...o, selected: !o.selected } : o));
       }
 
-      const ListItem = ({ option: o }: { option: Option<T> }) => {
+      const ListItem = ({ option: o }: { option: Option }) => {
         if (o.hidden) return null;
         return (
           <Item key={o.name} onClick={handleClick(o.name)}>
@@ -182,7 +182,7 @@ is paying attention to now is the list of items that it is provided with in stat
 And the search input also nicely contains all logic related to filtering the list of items to display, as well as 
 rendering the actual input.
 
-    export default function Search<T>({ state }: SearchProps<T>) {
+    export default function Search({ state }: SearchProps) {
       const [search, setSearch] = useState("");
       const inputOptions = useAtomValue(state.inputOptionsAtom);
       const setOptions = useUpdateAtom(state.displayOptionsAtom);
