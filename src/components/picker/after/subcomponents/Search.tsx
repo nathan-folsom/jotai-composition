@@ -15,12 +15,17 @@ export type SearchProps<T> = {
 
 export default function Search<T>({ state }: SearchProps<T>) {
   const [search, setSearch] = useState("");
-  const inputOptions = useAtomValue(state.inputOptionsAtom);
-  const setOptions = useUpdateAtom(state.displayOptionsAtom);
+  const options = useAtomValue(state.optionsAtom);
+  const setHidden = useUpdateAtom(state.hiddenAtom);
 
   useEffect(() => {
-    setOptions(inputOptions.map(o => ({ ...o, hidden: !o.name.includes(search)})))
-  }, [search, setOptions, inputOptions]);
+    const updates = options.reduce((hidden: Record<string, boolean>, current) => {
+      hidden[current.name] = !current.name.includes(search);
+      return hidden;
+    }, {});
+
+    if (options.some(o => !!o.hidden !== updates[o.name])) setHidden(updates);
+  }, [options, search, setHidden]);
 
   return <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>;
 }

@@ -7,6 +7,7 @@ export type Option<T> = {
 } & T;
 
 export type PickerState<T> = {
-  inputOptionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
-  displayOptionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
+  optionsAtom: WritableAtom<Option<T>[], Option<T>[]>;
+  hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
+  selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
 }

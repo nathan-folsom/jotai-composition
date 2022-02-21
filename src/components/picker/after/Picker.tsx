@@ -1,8 +1,8 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { Option, PickerState } from '../types';
 import styled from 'styled-components';
-import { atom } from 'jotai';
 import { useUpdateAtom } from 'jotai/utils';
+import initializeState from './functions/initializeState';
 
 const Container = styled.div`
   display: flex;
@@ -19,17 +19,12 @@ export type PickerProps<T> = {
 }
 
 export default function Picker<T>({ options, children }: PickerProps<T>) {
-  const state = useRef<PickerState<T>>({
-    inputOptionsAtom: atom<Option<T>[]>([]),
-    displayOptionsAtom: atom<Option<T>[]>([]),
-  });
-  const setOptions = useUpdateAtom(state.current.inputOptionsAtom);
-  const setDisplayOptions = useUpdateAtom(state.current.displayOptionsAtom);
+  const state = useRef<PickerState<T>>(initializeState());
+  const setOptions = useUpdateAtom(state.current.optionsAtom);
 
   useEffect(() => {
     setOptions(options);
-    setDisplayOptions(options);
-  }, [options, setDisplayOptions, setOptions]);
+  }, [options, setOptions]);
 
   return (
     <Container>

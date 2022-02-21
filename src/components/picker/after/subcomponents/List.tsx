@@ -1,7 +1,7 @@
 import React from 'react';
 import { Option, PickerState } from '../../types';
 import styled from 'styled-components';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 
 const Container = styled.div`
   flex: 1 1 100%;
@@ -24,18 +24,19 @@ export type ListProps<T> = {
 }
 
 export default function List<T>({ state }: ListProps<T>) {
-  const [options, setOptions] = useAtom(state.displayOptionsAtom);
+  const options = useAtomValue(state.optionsAtom);
+  const [selected, setSelected] = useAtom(state.selectedAtom);
 
-  const handleClick = (name: string) => {
-    return () => setOptions(options.map(o => o.name === name ? { ...o, selected: !o.selected } : o));
+  const handleClick = (option: Option<T>) => {
+    return () => setSelected({ ...selected, [option.name]: !option.selected });
   }
 
   const ListItem = ({ option: o }: { option: Option<T> }) => {
     if (o.hidden) return null;
     return (
-      <Item key={o.name} onClick={handleClick(o.name)}>
+      <Item key={o.name} onClick={handleClick(o)}>
         <p key={o.name}>{o.name}</p>
-        <input type={'checkbox'} checked={!!o.selected} onChange={handleClick(o.name)}/>
+        <input type={'checkbox'} checked={!!o.selected} onChange={handleClick(o)}/>
       </Item>
     )
   }
