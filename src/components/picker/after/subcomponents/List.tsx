@@ -1,7 +1,7 @@
 import React from 'react';
-import { Option, PickerState } from '../../types';
+import { PickerState } from '../../types';
 import styled from 'styled-components';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import ListItem from './ListItem';
 
 const Container = styled.div`
@@ -15,15 +15,10 @@ export type ListProps = {
 
 export default function List({ state }: ListProps) {
   const options = useAtomValue(state.optionsAtom);
-  const [selected, setSelected] = useAtom(state.selectedAtom);
-
-  const handleClick = (option: Option) => {
-    return () => setSelected({ ...selected, [option.name]: !option.selected });
-  }
 
   return (
     <Container>
-      {options.map(o => <ListItem key={o.name} onClick={handleClick(o)} option={o} />)}
+      {options.map(o => <ListItem key={o.name} option={o} state={state} />)}
     </Container>
   )
 }
