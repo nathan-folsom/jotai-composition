@@ -4,13 +4,13 @@ import combinedUpdatesAtom from './combinedUpdatesAtom';
 
 export default function initializeState(): PickerState {
   const inputOptionsAtom = atom<Option[]>([]);
-  const hiddenItemsAtom = atom<Record<string, boolean>>({});
-  const selectedItemsAtom = atom<Record<string, boolean>>({});
-  const optionsAtom = combinedUpdatesAtom(inputOptionsAtom, hiddenItemsAtom, selectedItemsAtom);
+  const hiddenAtom = atom<Record<string, boolean>>({});
+  const selectedAtom = atom<Record<string, boolean>>({});
+  const optionsAtom = combinedUpdatesAtom(inputOptionsAtom, hiddenAtom, selectedAtom);
 
   return {
     optionsAtom,
-    hiddenAtom: hiddenItemsAtom,
-    selectedAtom: selectedItemsAtom,
+    hiddenAtom,
+    selectedAtom,
   }
 }

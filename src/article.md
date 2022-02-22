@@ -1,6 +1,6 @@
 # Composable, Reusable Components with Jotai
 
-Part of a strong codebase is the tooling that has been built to augment work within the environment, and reusable components play a significant role. Well-designed common code can be the difference between enjoyable development and a massive headache, and is something I'm always trying to find new ways to think about it. I recently began working with Jotai for state management, and it has led to some interesting patterns for composition in reusable React components. If you're not familiar with Jotai, you can [check it out here](https://jotai.org/), or keep reading; it's not too complicated!
+Part of a strong codebase is the tooling that has been built to augment work within the environment, and reusable components play a significant role. Well-designed common code can be the difference between enjoyable development and a massive headache, and is something I'm always trying to find new ways to think about. I recently began working with Jotai for state management, and it has led to some interesting patterns for composition in reusable React components. If you're not familiar with Jotai, you can [check it out here](https://jotai.org/), or keep reading; it's not too complicated!
 
 For this example, I'm using a generic picker component that renders a list of items, and allows the user to select some.
 
@@ -18,9 +18,6 @@ function Picker({ options }: PickerProps) {
 
   return (
     <Container>
-      {enableSearch && (
-        <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>
-      )}
       {options.map(o => (
         <Item key={o.name} onClick={handleClick(o.name)}>
           <p key={o.name}>{o.name}</p>
@@ -96,7 +93,7 @@ This makes use of React's [render props](https://reactjs.org/docs/render-props.h
 
 ```
 
-The only way to do this previously would be to keep adding props to the `Picker` component, which is not an inherently scalable solution.
+The only way to do this previously would have been to keep adding props to the `Picker` component, which is not an inherently scalable solution.
 
 ## Internal State
 
@@ -121,7 +118,7 @@ function Picker({ options, children }: PickerProps) {
 }
 ```
 
-The important things to note here are the usage of the `children` prop, and internal state within `useRef`. The `children` prop is a function that we call with the state object in order to pass it down to the actual child components. Storing state in a `useRef` assures that our state object is created once and persists throughout the lifecycle of the component, as well as being automatically destroyed when the component unmounts.
+The important things to note here are the usage of the `children` prop, and internal state within `useRef`. The `children` prop is a function that we call with the state object in order to render the actual child components. Storing state in a `useRef` assures that our state object is created once and persists throughout the lifecycle of the component, as well as being automatically destroyed when the component unmounts.
 
 The shape of the state object is also worth taking a look at:
 
@@ -133,7 +130,7 @@ type PickerState = {
 }
 ```
 
-`hiddenAtom` holds a map of items that are currently hidden, `selectedAtom` holds a map of items that are selected, and the `optionsAtom` holds a list of items that were originally passed to `Picker`. Updates from the map atoms are merged into the list by setting properties on each item:
+`hiddenAtom` holds a map of items that are currently hidden, `selectedAtom` holds a map of items that are selected, and the `optionsAtom` holds a list of items that were originally passed to `Picker`. Values from the map atoms are merged into the list by setting properties on each list item:
 
 ```
 type Option = {
@@ -147,7 +144,7 @@ If you want to see how the merge works with Jotai, take a look at [initializeSta
 
 ### List Renderer
 
-This component now only implements logic related to rendering the list. Clean!
+This component only implements logic related to rendering the list. Clean!
 
 ```
 function List({ state }: ListProps) {
@@ -163,7 +160,7 @@ function List({ state }: ListProps) {
 
 ### Search Input
 
-The search input nicely contains all logic related to filtering the list of items to display. In this case it checks for items whose name includes the search string before comparing the results with the current list of rendered items. If it finds any differences, it triggers a rerender by updating `hiddenAtom`.
+The search input nicely contains all logic needed to filter the list of items. In this case it checks for items whose name includes the search string before comparing the results with the current list of rendered items. If it finds any differences, it triggers a rerender by updating `hiddenAtom`.
 
 ```
 function Search({ state }: SearchProps) {
@@ -210,4 +207,4 @@ function ListItem({ option: o, state }: ListItemProps) {
 
 Instead of the whole `Picker` component growing as we add features to it, now it's just the state object that grows; and that's a good thing! A well organized state tree provides a lot of context and helps new eyes understand what is going on. Splitting components also reveals what exactly each is doing at a glance. As you may have noticed, all of our components are actually doing two things: Handling component logic *and* rendering html.
 
-For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component to a truly reusable component that is separate of rendering. Write and test the component logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line!
+For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component to a truly reusable component that is separated from rendering. Write and test the logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line!
