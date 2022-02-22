@@ -4,7 +4,7 @@ export type Option = {
   name: string;
   hidden?: boolean;
   selected?: boolean;
-};
+}
 
 export type PickerState = {
   optionsAtom: WritableAtom<Option[], Option[]>;
