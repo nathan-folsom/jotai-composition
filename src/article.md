@@ -8,8 +8,6 @@ Throughout this article, some type definitions and styling have been omitted for
 
 Here is a very minimal example that implements the basic functionality:
 
-    ...
-
     function Picker({ options }: PickerProps) {
       const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
 
@@ -30,8 +28,6 @@ Here is a very minimal example that implements the basic functionality:
     }
 
 This component is nice... until we run into use cases that require additional functionality. For example, a search bar! The simplest way to add search functionality is to just add an `enableSearch` prop and filtering logic within the component.
-
-    ...
 
     function Picker({ options, enableSearch }: PickerProps) {
       const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
@@ -69,7 +65,7 @@ With a couple of tricks and some help from Jotai, we can make composable reusabl
 3. Search Input (`Search`): Modifies state depending on user input.
 4. List Item (`ListItem`): Reads and modifies state on user selection.
 
-Breaking things up in this way creates some additional overhead, but provides significant advantages in terms of code cleanliness as the component becomes more complex. Here's what the composition looks like at the top level:
+Breaking things up in this way creates some additional overhead, but provides significant improvements in code cleanliness as the component becomes more complex. Here's what the composition looks like:
 
     <Picker options={items}>
       {state => (
@@ -80,7 +76,7 @@ Breaking things up in this way creates some additional overhead, but provides si
       )}
     </Picker>
 
-This makes use of React's [render props](https://reactjs.org/docs/render-props.html) to compose the smaller components as children of the State Container, while allowing the state to reside within the State Container. Passing around a state object has big implications in terms of readability, as it greatly reduces the amount of props that need to be passed around. Any logic dealing with state can now be contained within the subcomponent, and we can place props that affect a subcomponent directly on that subcomponent. Say for example that we wanted to add more filtering options to the `Search` component:
+This makes use of React's [render props](https://reactjs.org/docs/render-props.html) to give the smaller components access to state, while keeping the state within the State Container. Passing around a state object has big implications in terms of readability, as it greatly reduces the amount of props that need to be passed around. Any logic dealing with state can now be contained within the subcomponent, and we can place props that affect a subcomponent directly on that subcomponent. Say for example that we wanted to add more filtering options to the `Search` component:
 
     ...
 
@@ -98,8 +94,11 @@ Next, let's take a look at internal state and how the components work together.
 
     function Picker({ options, children }: PickerProps) {
       const state = useRef<PickerState>(initializeState());
+      const setOptions = useUpdateAtom(state.current.optionsAtom);
 
-    ...
+      useEffect(() => {
+        setOptions(options);
+      }, [options, setOptions]);
 
       return (
         <Container>
@@ -113,12 +112,12 @@ The important things to note here are the usage of the `children` prop, and inte
 The shape of the state object is also worth taking a look at:
 
     type PickerState = {
-        optionsAtom: WritableAtom<Option[], Option[]>;
-        hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
-        selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
+      optionsAtom: WritableAtom<Option[], Option[]>;
+      hiddenAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
+      selectedAtom: WritableAtom<Record<string, boolean>, Record<string, boolean>>;
     }
 
-`hiddenAtom` holds a map of items that are currently hidden, `selectedAtom` holds a map of items that are selected, and the `optionsAtom` holds a list of items that were originally passed to `Picker`. Updates from the map atoms are merged into the list by setting properties on each item to be used later:
+`hiddenAtom` holds a map of items that are currently hidden, `selectedAtom` holds a map of items that are selected, and the `optionsAtom` holds a list of items that were originally passed to `Picker`. Updates from the map atoms are merged into the list by setting properties on each item:
 
     type Option = {
       name: string;
@@ -134,7 +133,6 @@ This component now only implements logic related to rendering the list. Clean!
 
     export default function List({ state }: ListProps) {
       const options = useAtomValue(state.optionsAtom);
-
       return (
         <Container>
           {options.map(o => <ListItem key={o.name} option={o} state={state} />)}
@@ -142,7 +140,7 @@ This component now only implements logic related to rendering the list. Clean!
       )
     }
 
-## Search Input
+### Search Input
 
 The search input nicely contains all logic related to filtering the list of items to display. In this case it checks for items whose name includes the search string before comparing the results with the current list of rendered items. If it finds any differences, it triggers a rerender by updating `hiddenAtom`.
 
@@ -185,6 +183,6 @@ By passing the state object to our list items, we can move the click handling lo
 
 ## Wrapping Up
 
-Instead of the whole `Picker` component growing as we add features to it, now we just have to edit the state object; and that's a good thing! A well organized state tree provides a lot of context and helps new eyes understand what is going on. Splitting components also reveals what exactly each is doing at a glance. As you may have noticed, all of our components are actually doing two things: Handling component logic *and* rendering html.
+Instead of the whole `Picker` component growing as we add features to it, now it's just the state object that grows; and that's a good thing! A well organized state tree provides a lot of context and helps new eyes understand what is going on. Splitting components also reveals what exactly each is doing at a glance. As you may have noticed, all of our components are actually doing two things: Handling component logic *and* rendering html.
 
-For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component into a truly reusable React component that exists outside of rendering. Write and test the component logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line.
+For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component to a truly reusable component that is separate of rendering. Write and test the component logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line!
