@@ -1,12 +1,16 @@
 # Composition in Reusable Components with Jotai, Part 1
 
-In my never-ending quest for clean code, I came up with a pattern for maximizing composition in reusable React
-components using Jotai. Jotai is a React state management library, you can [check it out here](https://jotai.org/) if
-you're not familiar, or keep reading; it's not too complicated!
+Part of a strong codebase is the tools and utilities that have been created to augment work within the environment, and
+reusable components are a big part of this. Well-designed common code can be the difference between enjoyable
+development and a massive headache, and is something I'm always trying to find new ways to think about it. At my current
+workplace I had the opportunity to start using a new state management library, Jotai, and it has led me to some
+interesting places. Recently, I started experimenting with patterns for maximizing composition in reusable React
+components. If you're not familiar with Jotai, you can [check it out here](https://jotai.org/)
+, or keep reading; it's not too complicated!
 
-I'm using the example of a universal picker component that renders a list of items, and allows the user to select some
-items. Here is a very minimal example that implements the most basic functionality. Some type definitions and styling
-have been omitted, [visit the GitHub repository](https://github.com/nathan-folsom/jotai-composition)
+To give an example, I'm using a generic picker component that renders a list of items, and allows the user to select
+some items. Here is a very minimal example that implements the most basic functionality. Some type definitions and
+styling have been omitted, [visit the GitHub repository](https://github.com/nathan-folsom/jotai-composition)
 to see all the code.
 
     ...
@@ -30,9 +34,9 @@ to see all the code.
       );
     }
 
-This component is nice... until we run into use cases that require some additional functionality. For example, a search
-bar! The simplest way to go about adding search functionality is to just add a prop that conditionally renders a search
-input and to implement the search logic within the component.
+This component is nice... until we run into use cases that require additional functionality. For example, a search bar!
+The simplest way to go add search functionality is to just add a prop that conditionally renders a search input and to
+implement the filtering logic within the component.
 
     ...
 
@@ -62,23 +66,24 @@ input and to implement the search logic within the component.
     }
 
 Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making
-some improvements. The way we added search functionality causes the component to increasingly grow in complexity over
-time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the
-component will simply become too big to easily maintain. The real problem here is that we're building the component *
-inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed
-together.
+improvements to future usability. If we keep adding functionality to `Picker` in the way that we added search filtering,
+the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the
+chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real
+problem here is that we're building the component *inside out* by continuously filling it with more functionality
+instead of building smaller pieces that can be composed together.
 
 ## Composition
 
-With a couple of tricks and some help from Jotai, we can make composable reusable logic. Just as the React gods
+With a couple of tricks and some help from Jotai, we can make composable reusable logic, just as the React gods
 intended. First, let's break down the component into its logical units:
 
-1. State Container: Keeps track of internal state.
-2. List Renderer: Reads from state and renders items.
-3. Search Input: Modifies state depending on user input.
+1. State Container (`Picker`): Keeps track of internal state.
+2. List Renderer (`List`): Reads from state and renders items.
+3. Search Input (`Search`): Modifies state depending on user input.
+4. List Item (`List Item`): Modifies state on user selection.
 
 Breaking things up in this way creates some additional overhead, but provides significant advantages in terms of code
-cleanliness as a component becomes more complex. Here's what the composition looks like at the top level:
+cleanliness as the component becomes more complex. Here's what the composition looks like at the top level:
 
     <Picker options={items}>
       {state => (
@@ -90,15 +95,20 @@ cleanliness as a component becomes more complex. Here's what the composition loo
     </Picker>
 
 This makes use of React's [render props](https://reactjs.org/docs/render-props.html) to compose the smaller components
-as children of the State Container, while allowing the state to reside within the State Container. This also allows us
-to place props that affect a subcomponent directly on the subcomponent. Say for example that we wanted to add more
-filtering options to the `Search` component:
+as children of the State Container, while allowing the state to reside within the State Container. Passing around a
+state object has big implications in terms of readability, as it greatly reduces the amount of props that need to be
+passed around. Any logic dealing with state can now be contained within the subcomponent, and we can place props that
+affect a subcomponent directly on that subcomponent. Say for example that we wanted to add more filtering options to
+the `Search` component:
 
     ...
 
-      <Search state={state} caseSensitive hideNames={["zap"]} />
+      <Search state={state} caseSensitive hideNames={["foo"]} />
 
     ...
+
+The only way to do this previously would be to keep adding props to the `Picker` component, which is not an inherently
+scalable solution.
 
 ## Internal State
 
@@ -108,7 +118,6 @@ Next, let's take a look at internal state and how the components work together.
 
     function Picker({ options, children }: PickerProps) {
       const state = useRef<PickerState>(initializeState());
-      const setOptions = useUpdateAtom(state.current.optionsAtom);
 
     ...
 
@@ -121,8 +130,10 @@ Next, let's take a look at internal state and how the components work together.
 
 The important things to note here are the usage of the `children` prop, and internal state within `useRef`.
 The `children` prop is a function that we call with the state object in order to pass it down to the actual child
-components. Storing state in a `useRef` assures that our atoms are created once and persist throughout the lifecycle of
-the component. The shape of the state object is also worth taking a look at:
+components. Storing state in a `useRef` assures that our state object is created once and persists throughout the
+lifecycle of the component, as well as being automatically destroyed when the component unmounts.
+
+The shape of the state object is also worth taking a look at:
 
     type PickerState = {
         optionsAtom: WritableAtom<Option[], Option[]>;
@@ -131,13 +142,13 @@ the component. The shape of the state object is also worth taking a look at:
     }
 
 `hiddenAtom` holds a map of items that are currently hidden, `selectedAtom` holds a map of items that are selected, and
-the `optionsAtom` holds a list of items that are automatically combined with the values held within the previous two
-atoms. The updates are merged into the list by setting properties on each item based on the values in each map:
+the `optionsAtom` holds a list of items that were originally passed to `Picker`. Updates from the map atoms are merged
+into the list by setting properties on each item to be used later:
 
     type Option = {
       name: string;
-      hidden?: boolean; // Set by combining with hiddenAtom, if true this item won't be rendered
-      selected?: boolean; // Set by combining with selectedAtom, if true this item will be rendered with a checked input
+      hidden?: boolean;
+      selected?: boolean;
     };
 
 If you want to see how the merge works with Jotai, take a look
@@ -147,20 +158,14 @@ and [combinedUpdatesAtom.ts](https://github.com/nathan-folsom/jotai-composition/
 
 ### List Renderer
 
-After the refactor, we have successfully removed the filtering logic from this component. Now, the List Renderer only
-has to read the list of items from state, and modify state when a user selects from the list.
+This component now only implements logic related to rendering the list. Clean!
 
-    function List({ state }: ListProps) {
+    export default function List({ state }: ListProps) {
       const options = useAtomValue(state.optionsAtom);
-      const [selected, setSelected] = useAtom(state.selectedAtom);
-
-      const handleClick = (option: Option) => {
-        return () => setSelected({ ...selected, [option.name]: !option.selected });
-      }
 
       return (
         <Container>
-          {options.map(o => <ListItem key={o.name} onClick={handleClick(o)} option={o} />)}
+          {options.map(o => <ListItem key={o.name} option={o} state={state} />)}
         </Container>
       )
     }
@@ -168,7 +173,7 @@ has to read the list of items from state, and modify state when a user selects f
 ## Search Input
 
 The search input nicely contains all logic related to filtering the list of items to display. In this case it checks for
-items whose name includes the search string, before comparing the results with the current list of rendered items. If it
+items whose name includes the search string before comparing the results with the current list of rendered items. If it
 finds any differences, it triggers a rerender by updating `hiddenAtom`.
 
     function Search({ state }: SearchProps) {
@@ -188,13 +193,35 @@ finds any differences, it triggers a rerender by updating `hiddenAtom`.
       return <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>;
     }
 
+## List Item
+
+By passing the state object into our list items, we can move the click handling logic to the same place where the actual
+input component is being rendered.
+
+    export default function ListItem({ option: o, state }: ListItemProps) {
+      const [selected, setSelected] = useAtom(state.selectedAtom);
+
+      const handleClick = () => {
+        setSelected({ ...selected, [o.name]: !o.selected });
+      }  
+
+      if (o.hidden) return null;
+      return (
+        <Item key={o.name} onClick={handleClick}>
+          <p key={o.name}>{o.name}</p>
+          <input type={'checkbox'} checked={!!o.selected} onChange={handleClick}/>
+        </Item>
+      )
+    }
+
 ## Wrapping Up
 
 Instead of the whole `Picker` component growing as we add features to it, now we just have to add to the state object;
 and that's a good thing! A well organized state tree provides a lot of context and helps understand what is going on for
-someone that is new to the code. Splitting things up in this way also makes it a lot clearer what exactly each component
-is doing. As you may have noticed, each component is still actually doing two things: Handling component logic, and
+someone that is new to the code. Splitting components up also makes it a lot clearer what exactly each is doing at a
+glance. As you may have noticed, each component is still actually doing two things: Handling component logic, and
 rendering html.
 
 Stay tuned for part 2, where we will take `Picker` and turn it from a reusable web component into a truly reusable React
-component that exists outside of rendering.
+component that exists outside of rendering. Test the logic once and use it to implement pickers with different
+appearances, or even with different underlying rendering engines like mobile or command line.
