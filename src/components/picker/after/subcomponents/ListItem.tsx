@@ -22,15 +22,15 @@ export type ListItemProps = {
 export default function ListItem({ option: o, state }: ListItemProps) {
   const [selected, setSelected] = useAtom(state.selectedAtom);
 
-  const handleClick = () => {
+  const toggleSelected = () => {
     setSelected({ ...selected, [o.name]: !o.selected });
   }
 
   if (o.hidden) return null;
   return (
-    <Item key={o.name} onClick={handleClick}>
+    <Item key={o.name} onClick={toggleSelected}>
       <p key={o.name}>{o.name}</p>
-      <input type={'checkbox'} checked={!!o.selected} onChange={handleClick}/>
+      <input type={'checkbox'} checked={!!o.selected} onChange={toggleSelected}/>
     </Item>
   )
 }

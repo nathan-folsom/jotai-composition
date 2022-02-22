@@ -58,16 +58,16 @@ This component is nice... until we run into use cases that require additional fu
       );
     }
 
-Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements to future usability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed together.
+Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements for future usability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed together.
 
 ## Composition
 
-With a couple of tricks and some help from Jotai, we can make composable reusable logic, just as the React gods intended. First, let's break down the component into its logical units:
+With a couple of tricks and some help from Jotai, we can make composable reusable logic; just as the React gods intended. First, let's break down the component into its logical units:
 
 1. State Container (`Picker`): Keeps track of internal state.
 2. List Renderer (`List`): Reads from state and renders items.
 3. Search Input (`Search`): Modifies state depending on user input.
-4. List Item (`List Item`): Reads and modifies state on user selection.
+4. List Item (`ListItem`): Reads and modifies state on user selection.
 
 Breaking things up in this way creates some additional overhead, but provides significant advantages in terms of code cleanliness as the component becomes more complex. Here's what the composition looks like at the top level:
 
@@ -126,7 +126,7 @@ The shape of the state object is also worth taking a look at:
       selected?: boolean;
     };
 
-If you want to see how the merge works with Jotai, take a look at [initializeState.ts](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/initializeState.ts)and [combinedUpdatesAtom.ts](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/combinedUpdatesAtom.ts).
+If you want to see how the merge works with Jotai, take a look at [initializeState.ts](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/initializeState.ts) and [combinedUpdatesAtom.ts](https://github.com/nathan-folsom/jotai-composition/blob/master/src/components/picker/after/functions/combinedUpdatesAtom.ts).
 
 ### List Renderer
 
@@ -163,28 +163,28 @@ The search input nicely contains all logic related to filtering the list of item
       return <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>;
     }
 
-## List Item
+### List Item
 
-By passing the state object into our list items, we can move the click handling logic to the same place where the actual input component is being rendered.
+By passing the state object to our list items, we can move the click handling logic to the same place where the actual input component is being rendered.
 
     export default function ListItem({ option: o, state }: ListItemProps) {
       const [selected, setSelected] = useAtom(state.selectedAtom);
 
-      const handleClick = () => {
+      const toggleSelected = () => {
         setSelected({ ...selected, [o.name]: !o.selected });
       }  
 
       if (o.hidden) return null;
       return (
-        <Item key={o.name} onClick={handleClick}>
+        <Item key={o.name} onClick={toggleSelected}>
           <p key={o.name}>{o.name}</p>
-          <input type={'checkbox'} checked={!!o.selected} onChange={handleClick}/>
+          <input type={'checkbox'} checked={!!o.selected} onChange={toggleSelected}/>
         </Item>
       )
     }
 
 ## Wrapping Up
 
-Instead of the whole `Picker` component growing as we add features to it, now we just have to add to the state object; and that's a good thing! A well organized state tree provides a lot of context and helps understand what is going on for someone that is new to the code. Splitting components up also makes it a lot clearer what exactly each is doing at a glance. As you may have noticed, each component is still actually doing two things: Handling component logic *and* rendering html.
+Instead of the whole `Picker` component growing as we add features to it, now we just have to edit the state object; and that's a good thing! A well organized state tree provides a lot of context and helps new eyes understand what is going on. Splitting components also reveals what exactly each is doing at a glance. As you may have noticed, all of our components are actually doing two things: Handling component logic *and* rendering html.
 
 For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component into a truly reusable React component that exists outside of rendering. Write and test the component logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line.
