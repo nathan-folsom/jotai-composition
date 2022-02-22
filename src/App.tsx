@@ -17,7 +17,7 @@ const Container = styled.div`
 function App() {
   return (
     <Container>
-      <PickerBefore options={items} />
+      <PickerBefore options={items} enableSearch />
       <PickerAfter options={items}>
         {state => (
           <>
