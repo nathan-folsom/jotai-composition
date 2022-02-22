@@ -1,4 +1,4 @@
-# Composable, Reusable Components with Jotai
+# Composable Reusable Components with Jotai
 
 Part of a strong codebase is the tooling that has been built to augment work within the environment, and reusable components play a significant role. Well-designed common code can be the difference between enjoyable development and a massive headache, and is something I'm always trying to find new ways to think about. I recently began working with Jotai for state management, and it has led to some interesting patterns for composition in reusable React components. If you're not familiar with Jotai, you can [check it out here](https://jotai.org/), or keep reading; it's not too complicated!
 
