@@ -29,7 +29,7 @@ function Picker({ options }: PickerProps) {
 }
 ```
 
-This component is nice... until we run into use cases that require additional functionality. For example, a search bar! The simplest way to add search functionality is to just add an `enableSearch` prop and filtering logic within the component.
+This component is nice... until we run into use cases that require additional functionality. For example, a search bar! The simplest way to add search functionality is to add an `enableSearch` prop for backwards compatibility, and filtering logic within the component.
 
 ```
 function Picker({ options, enableSearch }: PickerProps) {
@@ -58,42 +58,38 @@ function Picker({ options, enableSearch }: PickerProps) {
 }
 ```
 
-Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements for future usability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed together.
+Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements for scalability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed together.
 
 ## Composition
 
-With a couple of tricks and some help from Jotai, we can make composable reusable logic; just as the React gods intended. First, let's break down the component into its logical units:
+With some help from Jotai we can make composable reusable logic; just as the React gods intended. First, let's break down the component into its logical units:
 
 1. State Container (`Picker`): Keeps track of internal state.
 2. List Renderer (`List`): Reads from state and renders items.
 3. Search Input (`Search`): Modifies state depending on user input.
-4. List Item (`ListItem`): Reads and modifies state on user selection.
+4. List Item (`ListItem`): Renders an item and modifies state when a user interacts with it.
 
 Breaking things up in this way creates some additional overhead, but provides significant improvements in code cleanliness as the component becomes more complex. Here's what the composition looks like:
 
 ```
 <Picker options={items}>
-  {state => (
-    <>
-      <Search state={state} />
-      <List state={state} />
-    </>
-  )}
+  <Search />
+  <List />
 </Picker>
 ```
 
-This makes use of React's [render props](https://reactjs.org/docs/render-props.html) to give the smaller components access to state, while keeping the state within the State Container. Passing around a state object has big implications in terms of readability, as it greatly reduces the amount of props that need to be passed around. Any logic dealing with state can now be contained within the subcomponent, and we can place props that affect a subcomponent directly on that subcomponent. Say for example that we wanted to add more filtering options to the `Search` component:
+This makes use of Jotai's `Provider` component to give the smaller components access to state, while keeping the state within the State Container. State is now accessed by hooks, which has big implications in terms of readability as it greatly reduces the amount of props that need to be passed around. Any logic dealing with state can now be contained within the subcomponent, and we can reserve props for logic that directly affects a subcomponent. Say for example that we wanted to add more options to the `Search` component:
 
 ```
 ...
 
-  <Search state={state} caseSensitive hideNames={["foo"]} />
+  <Search caseSensitive debounceMs={500} />
   
 ...
 
 ```
 
-The only way to do this previously would have been to keep adding props to the `Picker` component, which is not an inherently scalable solution.
+The way to do this previously would have been to keep adding props to the `Picker` component and passing them to internal components, which is not an inherently scalable solution.
 
 ## Internal State
 
@@ -103,8 +99,7 @@ Next, let's take a look at internal state and how the components work together.
 
 ```
 function Picker({ options, children }: PickerProps) {
-  const state = useRef<PickerState>(initializeState());
-  const setOptions = useUpdateAtom(state.current.optionsAtom);
+  const setOptions = useUpdateAtom(pickerState.optionsAtom, pickerScope);
 
   useEffect(() => {
     setOptions(options);
@@ -112,13 +107,21 @@ function Picker({ options, children }: PickerProps) {
 
   return (
     <Container>
-      {children(state.current)}
+      {children}
     </Container>
   );
 }
+
+export default function provider(props: PickerProps) {
+  return (
+    <Provider scope={pickerScope}>
+      <Picker {...props} />
+    </Provider>
+  )
+}
 ```
 
-The important things to note here are the usage of the `children` prop, and internal state within `useRef`. The `children` prop is a function that we call with the state object in order to render the actual child components. Storing state in a `useRef` assures that our state object is created once and persists throughout the lifecycle of the component, as well as being automatically destroyed when the component unmounts.
+The important things to note here are the usage of the Jotai `Provider` wrapping `Picker` and the state access via the `useUpdateAtom` hook. Both make use of a `scope` which assures that the `Provider` will capture all state and not allow it to be accessible globally. Additionally, all children of the scoped `Provider` will be allowed to access the same state, which is the core mechanism allowing us to compose a component in this manner. Another benefit of this setup is that when the `Picker` unmounts, its internal state will be automatically destroyed.
 
 The shape of the state object is also worth taking a look at:
 
@@ -147,12 +150,12 @@ If you want to see how the merge works with Jotai, take a look at [initializeSta
 This component only implements logic related to rendering the list. Clean!
 
 ```
-function List({ state }: ListProps) {
-  const options = useAtomValue(state.optionsAtom);
+function List() {
+  const options = useAtomValue(pickerState.optionsAtom, pickerScope);
 
   return (
     <Container>
-      {options.map(o => <ListItem key={o.name} option={o} state={state} />)}
+      {options.map(o => <ListItem key={o.name} option={o} />)}
     </Container>
   )
 }
@@ -163,10 +166,10 @@ function List({ state }: ListProps) {
 The search input nicely contains all logic needed to filter the list of items. In this case it checks for items whose name includes the search string before comparing the results with the current list of rendered items. If it finds any differences, it triggers a rerender by updating `hiddenAtom`.
 
 ```
-function Search({ state }: SearchProps) {
+function Search() {
   const [search, setSearch] = useState("");
-  const options = useAtomValue(state.optionsAtom);
-  const setHidden = useUpdateAtom(state.hiddenAtom);
+  const options = useAtomValue(pickerState.optionsAtom, pickerScope);
+  const setHidden = useUpdateAtom(pickerState.hiddenAtom, pickerScope);
 
   useEffect(() => {
     const updates = options.reduce((hidden: Record<string, boolean>, current) => {
@@ -177,17 +180,17 @@ function Search({ state }: SearchProps) {
     if (options.some(o => !!o.hidden !== updates[o.name])) setHidden(updates);
   }, [options, search, setHidden]);
 
-  return <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>;
+  return <SearchInput value={search} onChange={e => setSearch(e.target.value)} />;
 }
 ```
 
 ### List Item
 
-By passing the state object to our list items, we can move the click handling logic to the same place where the actual input component is being rendered.
+By accessing the state object within our list items, we can move the click handling logic to the same place where the actual input component is being rendered.
 
 ```
-function ListItem({ option: o, state }: ListItemProps) {
-  const [selected, setSelected] = useAtom(state.selectedAtom);
+function ListItem({ option: o }: ListItemProps) {
+  const [selected, setSelected] = useAtom(pickerState.selectedAtom, pickerScope);
 
   const toggleSelected = () => {
     setSelected({ ...selected, [o.name]: !o.selected });
@@ -207,4 +210,4 @@ function ListItem({ option: o, state }: ListItemProps) {
 
 Instead of the whole `Picker` component growing as we add features to it, now it's just the state object that grows; and that's a good thing! A well organized state tree provides a lot of context and helps new eyes understand what is going on. Splitting components also reveals what exactly each is doing at a glance. As you may have noticed, all of our components are actually doing two things: Handling component logic *and* rendering html.
 
-For codebases that contain multiple applications, this refactor could be taken a step further to go from a web component to a truly reusable component that is separated from rendering. Write and test the logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line!
+For codebases that contain multiple applications, this refactor could even be taken a step further by pulling all the logic that handles internal state out of the components. That way we could write and test the logic once and use it to build pickers with different appearances, or even with different underlying rendering engines such as mobile or command line!
