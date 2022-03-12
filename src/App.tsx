@@ -17,14 +17,10 @@ const Container = styled.div`
 function App() {
   return (
     <Container>
-      <PickerBefore options={items} enableSearch />
+      <PickerBefore options={items} enableSearch/>
       <PickerAfter options={items}>
-        {state => (
-          <>
-            <Search state={state} />
-            <List state={state} />
-          </>
-        )}
+        <Search />
+        <List />
       </PickerAfter>
     </Container>
   );

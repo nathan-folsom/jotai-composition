@@ -1,7 +1,8 @@
 import React from 'react';
-import { Option, PickerState } from '../../types';
+import { Option } from '../../types';
 import styled from 'styled-components';
 import { useAtom } from 'jotai';
+import { pickerScope, pickerState } from "../state";
 
 const Item = styled.button`
   background: none;
@@ -16,11 +17,10 @@ const Item = styled.button`
 
 export type ListItemProps = {
   option: Option;
-  state: PickerState;
 }
 
-export default function ListItem({ option: o, state }: ListItemProps) {
-  const [selected, setSelected] = useAtom(state.selectedAtom);
+export default function ListItem({ option: o }: ListItemProps) {
+  const [selected, setSelected] = useAtom(pickerState.selectedAtom, pickerScope);
 
   const toggleSelected = () => {
     setSelected({ ...selected, [o.name]: !o.selected });

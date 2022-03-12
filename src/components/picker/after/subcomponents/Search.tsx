@@ -1,22 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { PickerState } from '../../types';
 import { useAtomValue } from 'jotai';
 import styled from 'styled-components';
 import { useUpdateAtom } from 'jotai/utils';
+import { pickerScope, pickerState } from "../state";
 
 const SearchInput = styled.input`
   margin: 10px 10px 0;
   padding: 5px;
 `;
 
-export type SearchProps = {
-  state: PickerState;
-}
-
-export default function Search({ state }: SearchProps) {
+export default function Search() {
   const [search, setSearch] = useState("");
-  const options = useAtomValue(state.optionsAtom);
-  const setHidden = useUpdateAtom(state.hiddenAtom);
+  const options = useAtomValue(pickerState.optionsAtom, pickerScope);
+  const setHidden = useUpdateAtom(pickerState.hiddenAtom, pickerScope);
 
   useEffect(() => {
     const updates = options.reduce((hidden: Record<string, boolean>, current) => {

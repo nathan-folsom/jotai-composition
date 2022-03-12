@@ -1,8 +1,9 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
-import { Option, PickerState } from '../types';
+import React, { PropsWithChildren, useEffect } from 'react';
+import { Option } from '../types';
 import styled from 'styled-components';
 import { useUpdateAtom } from 'jotai/utils';
-import initializeState from './functions/initializeState';
+import { Provider } from 'jotai';
+import { pickerScope, pickerState } from "./state";
 
 const Container = styled.div`
   display: flex;
@@ -13,14 +14,12 @@ const Container = styled.div`
   margin: 10px;
 `;
 
-export type PickerProps = {
+export type PickerProps = PropsWithChildren<{
   options: Option[];
-  children: (state: PickerState) => ReactNode;
-}
+}>;
 
-export default function Picker({ options, children }: PickerProps) {
-  const state = useRef<PickerState>(initializeState());
-  const setOptions = useUpdateAtom(state.current.optionsAtom);
+function Picker({ options, children }: PickerProps) {
+  const setOptions = useUpdateAtom(pickerState.optionsAtom, pickerScope);
 
   useEffect(() => {
     setOptions(options);
@@ -28,7 +27,15 @@ export default function Picker({ options, children }: PickerProps) {
 
   return (
     <Container>
-      {children(state.current)}
+      {children}
     </Container>
   );
+}
+
+export default function provider(props: PickerProps) {
+  return (
+    <Provider scope={pickerScope}>
+      <Picker {...props} />
+    </Provider>
+  )
 }
