@@ -1,4 +1,5 @@
 # Composable Reusable Components with Jotai
+Update 3/12/22: Using Jotai provider to hold state instead of passing a state prop. [GitHub Commit.](https://github.com/nathan-folsom/jotai-composition/commit/dba7f64f3c744afbce4cbd692e3d032a2ff056c2)
 
 Part of a strong codebase is the tooling that has been built to augment work within the environment, and reusable components play a significant role. Well-designed common code can be the difference between enjoyable development and a massive headache, and is something I'm always trying to find new ways to think about. I recently began working with Jotai for state management, and it has led to some interesting patterns for composition in reusable React components. If you're not familiar with Jotai, you can [check it out here](https://jotai.org/), or keep reading; it's not too complicated!
 
