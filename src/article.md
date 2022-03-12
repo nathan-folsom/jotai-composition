@@ -17,14 +17,14 @@ function Picker({ options }: PickerProps) {
   }
 
   return (
-    <Container>
+    <div>
       {options.map(o => (
-        <Item key={o.name} onClick={handleClick(o.name)}>
+        <div key={o.name} onClick={handleClick(o.name)}>
           <p key={o.name}>{o.name}</p>
           <input type={'checkbox'} checked={selectedItems[o.name]} onChange={handleClick(o.name)}/>
-        </Item>
+        </div>
       ))}
-    </Container>
+    </div>
   );
 }
 ```
@@ -41,30 +41,30 @@ function Picker({ options, enableSearch }: PickerProps) {
   }
 
   return (
-    <Container>
+    <div>
       {enableSearch && (
-        <SearchInput value={search} onChange={e => setSearch(e.target.value)}/>
+        <input value={search} onChange={e => setSearch(e.target.value)} />
       )}
       {options
         .filter(o => o.name.includes(search))
         .map(o => (
-          <Item key={o.name} onClick={handleClick(o.name)}>
+          <div key={o.name} onClick={handleClick(o.name)}>
             <p key={o.name}>{o.name}</p>
-            <input type={'checkbox'} checked={selectedItems[o.name]} onChange={handleClick(o.name)}/>
-          </Item>
+            <input type={'checkbox'} checked={selectedItems[o.name]} onChange={handleClick(o.name)} />
+          </div>
         ))}
-    </Container>
+    </div>
   );
 }
 ```
 
-Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements for scalability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with more functionality instead of building smaller pieces that can be composed together.
+Obviously the component is still quite lightweight and readable, but for the sake of this article let's start making improvements to its scalability. If we keep adding functionality to `Picker` in the way that we added search filtering, the component will increasingly grow in complexity over time. The more props and functionality we add, the higher the chance that there will be clashing logic or that the component will simply become too big to easily maintain. The real problem here is that we're building the component *inside out* by continuously filling it with functionality instead of building smaller pieces that can be composed together.
 
 ## Composition
 
 With some help from Jotai we can make composable reusable logic; just as the React gods intended. First, let's break down the component into its logical units:
 
-1. State Container (`Picker`): Keeps track of internal state.
+1. State Container (`Picker`): Owns internal state.
 2. List Renderer (`List`): Reads from state and renders items.
 3. Search Input (`Search`): Modifies state depending on user input.
 4. List Item (`ListItem`): Renders an item and modifies state when a user interacts with it.
@@ -78,7 +78,7 @@ Breaking things up in this way creates some additional overhead, but provides si
 </Picker>
 ```
 
-This makes use of Jotai's `Provider` component to give the smaller components access to state, while keeping the state within the State Container. State is now accessed by hooks, which has big implications in terms of readability as it greatly reduces the amount of props that need to be passed around. Any logic dealing with state can now be contained within the subcomponent, and we can reserve props for logic that directly affects a subcomponent. Say for example that we wanted to add more options to the `Search` component:
+This makes use of Jotai's `Provider` component to give the smaller components access to state, while keeping the state within the State Container. State is accessed by hooks, which has big implications in terms of readability as it greatly reduces the amount of props that need to be passed around. We are free to break components into smaller components without worrying about passing props, and any logic dealing with state can now be contained within the subcomponent. We can now reserve props for logic that directly affects a subcomponent. Say for example that we wanted to add more options to the `Search` component:
 
 ```
 ...
@@ -106,9 +106,9 @@ function Picker({ options, children }: PickerProps) {
   }, [options, setOptions]);
 
   return (
-    <Container>
+    <div>
       {children}
-    </Container>
+    </div>
   );
 }
 
@@ -154,9 +154,9 @@ function List() {
   const options = useAtomValue(pickerState.optionsAtom, pickerScope);
 
   return (
-    <Container>
+    <div>
       {options.map(o => <ListItem key={o.name} option={o} />)}
-    </Container>
+    </div>
   )
 }
 ```
@@ -180,7 +180,7 @@ function Search() {
     if (options.some(o => !!o.hidden !== updates[o.name])) setHidden(updates);
   }, [options, search, setHidden]);
 
-  return <SearchInput value={search} onChange={e => setSearch(e.target.value)} />;
+  return <input value={search} onChange={e => setSearch(e.target.value)} />;
 }
 ```
 
@@ -198,10 +198,10 @@ function ListItem({ option: o }: ListItemProps) {
 
   if (o.hidden) return null;
   return (
-    <Item key={o.name} onClick={toggleSelected}>
+    <div key={o.name} onClick={toggleSelected}>
       <p key={o.name}>{o.name}</p>
       <input type={'checkbox'} checked={!!o.selected} onChange={toggleSelected}/>
-    </Item>
+    </div>
   )
 }
 ```
